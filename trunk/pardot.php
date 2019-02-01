@@ -1,6 +1,7 @@
 <?php
 
 /*
+<<<<<<< HEAD
 * Plugin Name: Pardot
 * Description: Connect your WordPress to Pardot with shortcode and widgets for campaign tracking, quick form access, and dynamic content.
 * Author: cliffseal
@@ -32,10 +33,6 @@
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
-
-// define( 'PARDOT_API_EMAIL', 'cliff@logoscreative.com' );
-// define( 'PARDOT_API_PASSWORD', 'VA+.t#^,#6M887xU;9T}93746^sDg(' );
-// define( 'PARDOT_API_USER_KEY', 'a62f85417366631a533fa57db26cb447' );
 
 /**
  * @deprecated Deprecated since version 1.5
