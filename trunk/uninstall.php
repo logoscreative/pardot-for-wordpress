@@ -1,9 +1,9 @@
 <?php
 /**
- * Remove the 'pardot_settings' entry from wp-options when plugin is
+ * Remove the 'pardot_settings' entry from wp-options when plugin is uninstalled
  *
- * @author Mike Schinkel
- * @since 1.0.0
+ * @author Cliff Seal
+ * @since 1.5
  */
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) )
 	exit();
