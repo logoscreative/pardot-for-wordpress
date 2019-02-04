@@ -82,6 +82,10 @@ class Pardot_WordPress {
 		add_action( 'wp_footer', array( $this, 'pardot_enqueue_campaign_tracking_script' ) );
 		add_action( 'admin_menu', array( $this, 'pardot_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'pardot_admin_init' ) );
+		add_action( 'acf/load_field/name=pardot_campaign_id', array( $this, 'pardot_acf_load_campaign_values' ) );
+
+		// Preparing for ACF 5.8
+		add_action( 'acf/init', array( $this, 'pardot_acf_init' ) );
 
 	}
 
@@ -713,10 +717,34 @@ class Pardot_WordPress {
 	 */
 	public function pardot_enqueue_campaign_tracking_script() {
 
-		$selected_options = get_option( 'pardot_settings' );
+		// Make sure the action hasn't run yet
+		if ( self::$alreadyEnqueued ) {
+			return;
+		}
 
-		// Only run if we have a selected campaign and the action hasn't run yet
-		if ( $selected_options && $selected_options['campaign'] && !self::$alreadyEnqueued ) {
+		// Check for an overriding campaign
+		$campaign_tracking_id = get_field( 'pardot_campaign_id', get_the_ID() );
+
+		if ( get_field( 'pardot_campaign_id', get_the_ID() ) ) {
+
+			$campaign_tracking_id = get_field( 'pardot_campaign_id', get_the_ID() );
+			$campaign_tracking_id = intval($campaign_tracking_id) + 1000;
+
+		} else {
+
+			$selected_options = get_option( 'pardot_settings' );
+
+			// Only run if we have a selected campaign and the action hasn't run yet
+			if ( $selected_options && $selected_options['campaign'] ) {
+
+				// Convert campaign ID into trackable ID
+				$campaign_tracking_id = intval( $selected_options['campaign'] ) + 1000;
+
+			}
+
+		}
+
+		if ( $campaign_tracking_id ) {
 
 			// Return cached form HTML if we have it (to prevent lookups on every page load)
 			if ( false !== ( $campaign_template = get_transient( 'pardot_tracking_code_template' ) ) ) {
@@ -732,14 +760,14 @@ class Pardot_WordPress {
 
 				$args = array(
 					'timeout' => 30,
-					'body' => array(
+					'body'    => array(
 						'user_key' => PARDOT_API_USER_KEY,
-						'api_key' => $this->pardot_get_api_key(),
-						'format' => 'json'
+						'api_key'  => $this->pardot_get_api_key(),
+						'format'   => 'json'
 					)
 				);
 
-				$api_response = wp_remote_post($campaign_template_url, $args);
+				$api_response = wp_remote_post( $campaign_template_url, $args );
 
 				if ( is_wp_error( $api_response ) ) {
 
@@ -757,11 +785,11 @@ class Pardot_WordPress {
 						$api_response_body = json_decode( $api_response_body );
 
 						// If API key is invalid, force a new one and try again
-						if ( isset($api_response_body->{'err'}) && $api_response_body->{'err'} === 'Invalid API key or user key' ) {
+						if ( isset( $api_response_body->{'err'} ) && $api_response_body->{'err'} === 'Invalid API key or user key' ) {
 
-							$this->pardot_get_api_key(true);
+							$this->pardot_get_api_key( true );
 
-							$api_response = wp_remote_post($campaign_template_url, $args);
+							$api_response = wp_remote_post( $campaign_template_url, $args );
 
 							if ( is_wp_error( $api_response ) ) {
 
@@ -797,14 +825,12 @@ class Pardot_WordPress {
 
 			}
 
-			// Convert campaign ID into trackable ID
-			$campaign_tracking_id = intval($selected_options['campaign']) + 1000;
 			$campaign_tracking_code = '<script type="text/javascript">
-		<!--
-		piCId = \'' . $campaign_tracking_id . '\';
-		' . $campaign_template . '
-		-->
-	</script>';
+				<!--
+				piCId = \'' . $campaign_tracking_id . '\';
+				' . $campaign_template . '
+				-->
+			</script>';
 
 			echo apply_filters( 'pardot_campaign_tracking_code', $campaign_tracking_code );
 			self::$alreadyEnqueued = true;
@@ -1022,6 +1048,60 @@ define( \'PARDOT_API_USER_KEY\', \'Your Pardot User Key\' );</textarea>';
 		$html = '<input type="checkbox" id="https" name="' . $html_name . '" ' . $https . ' />';
 
 		echo $html;
+
+	}
+
+	public function pardot_acf_load_campaign_values( $field ) {
+
+		$field['choices'] = array();
+
+		$campaigns = $this->pardot_get_campaigns();
+
+		if ( $campaigns ) {
+
+			foreach ( $campaigns as $campaign => $data ) {
+
+				$campaign_id = esc_attr( $campaign );
+
+				// A fallback in the rare case of a malformed/empty stdClass of campaign data.
+				$campaign_name = __( 'Campaign ID: ' . $campaign_id, 'pardot' );
+
+				if ( isset( $data->name ) && is_string( $data->name ) ) {
+					$campaign_name = esc_html( $data->name );
+				}
+
+				$field['choices'][ $campaign_id ] = $campaign_name;
+
+			}
+
+		}
+
+		return $field;
+
+	}
+
+	public function pardot_acf_init() {
+
+		// check function exists
+		if ( function_exists('acf_register_block') ) {
+
+			// register a testimonial block
+			acf_register_block(array(
+				'name'			=> 'pardot-form',
+				'title'			=> 'Pardot Form',
+				'render_callback'	=> array( $this, 'pardot_form_render_callback'),
+				'category'		=> 'embed',
+				'icon'			=> 'book-alt',
+				'keywords'		=> array( 'pardot', 'form' )
+			));
+
+		}
+
+	}
+
+	public function pardot_form_render_callback( $block, $content = '', $is_preview = false ) {
+
+		echo '<h1>Sup fam</h1>';
 
 	}
 

@@ -52,6 +52,19 @@ if ( ! defined( 'PARDOT_JS_CACHE_TIMEOUT' ) ) {
 	define( 'PARDOT_JS_CACHE_TIMEOUT', MONTH_IN_SECONDS );
 }
 
+// Manage ACF using Composer
+require 'vendor/autoload.php';
+
+// Include ACF: https://www.advancedcustomfields.com/resources/including-acf-in-a-plugin-theme/
+// Don't include ACF if it's already an active plugin
+// Logic duplicates is_plugin_active() because function is unavailable before admin_init
+// Curious why ACF is being used? Because their method of working with Blocks is WAY better: https://www.advancedcustomfields.com/blog/acf-5-8-introducing-acf-blocks-for-gutenberg/
+if ( !in_array( 'advanced-custom-fields/acf.php', (array) get_option( 'active_plugins', array() ) ) ) {
+
+	include_once 'vendor/advanced-custom-fields/acf.php';
+
+}
+
 /**
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
