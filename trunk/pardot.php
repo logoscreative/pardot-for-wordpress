@@ -1,7 +1,6 @@
 <?php
 
 /*
-<<<<<<< HEAD
 * Plugin Name: Pardot
 * Description: Connect your WordPress to Pardot with shortcode and widgets for campaign tracking, quick form access, and dynamic content.
 * Author: cliffseal
